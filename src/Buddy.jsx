@@ -401,7 +401,7 @@ export default function Buddy() {
           display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
           <div style={{ fontSize: 8, color: "#222", letterSpacing: 2 }}>@ANTHROPIC/CLAUDE-CODE</div>
-          <a href="/claudeling.html" style={{ fontSize: 8, color: "#ff9944", letterSpacing: 2, textDecoration: "none", opacity: 0.5 }}
+          <a href="claudeling.html" style={{ fontSize: 8, color: "#ff9944", letterSpacing: 2, textDecoration: "none", opacity: 0.5 }}
             onMouseEnter={e => e.target.style.opacity = 1}
             onMouseLeave={e => e.target.style.opacity = 0.5}>
             ✦ CLAUDELING
