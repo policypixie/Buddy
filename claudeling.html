@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claudeling</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(ellipse at center, #2d1a0e 0%, #0e0804 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+    padding: 20px;
+  }
+
+  .device {
+    background: linear-gradient(160deg, #2e1a10, #1a0d06);
+    border: 3px solid #7a4020;
+    border-radius: 36px;
+    padding: 24px 22px 28px;
+    width: 300px;
+    box-shadow: 0 0 40px rgba(217,119,87,0.25), 0 0 80px rgba(217,119,87,0.1), inset 0 2px 0 rgba(255,180,100,0.12);
+  }
+
+  .header { text-align: center; margin-bottom: 14px; }
+  .header-sub { color: #e8875a; font-size: 10px; letter-spacing: 4px; opacity: 0.65; }
+  .header-title { color: #f5c890; font-size: 20px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 20px rgba(232,135,90,0.5); }
+  .header-mood { font-size: 20px; margin-top: 2px; }
+
+  .screen {
+    background: linear-gradient(180deg, #0d1f1a, #0a1510);
+    border-radius: 20px;
+    border: 2px solid #3a2510;
+    padding: 14px 10px 18px;
+    min-height: 210px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 4px 20px rgba(0,0,0,0.7);
+  }
+
+  .scanlines {
+    position: absolute; inset: 0; border-radius: 18px; pointer-events: none; z-index: 10;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  }
+
+  .speech {
+    position: absolute; top: 10px; left: 10px; right: 10px;
+    background: rgba(232,135,90,0.12);
+    border: 1px solid rgba(232,135,90,0.3);
+    border-radius: 12px;
+    padding: 8px 12px;
+    color: #f5c890;
+    font-size: 11px;
+    line-height: 1.5;
+    text-align: center;
+    z-index: 5;
+    min-height: 48px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .creature-wrap {
+    margin-top: 60px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  @keyframes bounce {
+    0% { transform: translateY(0) scale(1); }
+    30% { transform: translateY(-28px) scale(.92,1.1); }
+    60% { transform: translateY(4px) scale(1.06,.95); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0deg); }
+    20% { transform: rotate(-14deg); }
+    40% { transform: rotate(14deg); }
+    60% { transform: rotate(-9deg); }
+    80% { transform: rotate(9deg); }
+  }
+  @keyframes tail {
+    0%,100% { transform: rotate(-15deg); }
+    50% { transform: rotate(15deg); }
+  }
+  @keyframes ear {
+    0%,75%,100% { transform: rotate(0deg); }
+    80% { transform: rotate(-10deg); }
+    88% { transform: rotate(10deg); }
+    95% { transform: rotate(-5deg); }
+  }
+
+  .float  { animation: float 3s ease-in-out infinite; }
+  .bounce { animation: bounce 0.55s ease; }
+  .spin   { animation: spin 0.6s ease; }
+  .wiggle { animation: wiggle 0.5s ease; }
+
+  .tail { animation: tail 1.5s ease-in-out infinite; transform-origin: 28px 20px; }
+  .earL { animation: ear 4s ease-in-out infinite; transform-origin: -28px -42px; }
+  .earR { animation: ear 4s ease-in-out 0.5s infinite; transform-origin: 28px -42px; }
+
+  .stats { margin-top: 16px; display: flex; flex-direction: column; gap: 7px; }
+  .stat-row { display: flex; align-items: center; gap: 7px; }
+  .stat-emoji { font-size: 12px; width: 14px; }
+  .stat-label { color: #b07050; font-size: 9px; letter-spacing: 1px; width: 58px; }
+  .stat-track { flex: 1; background: rgba(255,255,255,0.07); border-radius: 5px; height: 7px; overflow: hidden; }
+  .stat-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+  .stat-num { color: #e8875a; font-size: 9px; width: 24px; text-align: right; }
+
+  .buttons { display: flex; gap: 8px; margin-top: 18px; }
+  .btn {
+    flex: 1; padding: 10px 4px;
+    background: linear-gradient(160deg, #4a2010, #2a1006);
+    border: 1.5px solid #6b3a1f; border-radius: 14px;
+    color: #f5c890; font-size: 11px; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,180,100,0.1);
+    font-family: Georgia, serif; letter-spacing: 0.5px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn:active { transform: scale(0.93); filter: brightness(0.9); }
+
+  .footer { text-align: center; margin-top: 12px; color: rgba(200,120,70,0.3); font-size: 9px; letter-spacing: 2px; }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="header">
+    <div class="header-sub">LEGENDARY COMPANION</div>
+    <div class="header-title">CLAUDELING ✦</div>
+    <div class="header-mood" id="moodEmoji">😊</div>
+  </div>
+
+  <div class="screen">
+    <div class="scanlines"></div>
+    <div class="speech" id="speech">Hello, friend. I am your Claudeling. 🧡</div>
+
+    <div class="creature-wrap float" id="creature" onclick="pet()">
+      <svg width="130" height="130" viewBox="-65 -65 130 130" overflow="visible">
+        <defs>
+          <radialGradient id="bg" cx="40%" cy="35%">
+            <stop offset="0%" stop-color="#e8966a" id="gStop1"/>
+            <stop offset="100%" stop-color="#a0522a" id="gStop2"/>
+          </radialGradient>
+          <radialGradient id="belly" cx="50%" cy="40%">
+            <stop offset="0%" stop-color="#f0b080"/>
+            <stop offset="100%" stop-color="#d8885a"/>
+          </radialGradient>
+        </defs>
+
+        <!-- shadow -->
+        <ellipse cx="0" cy="60" rx="30" ry="5" fill="rgba(0,0,0,0.3)"/>
+
+        <!-- tail -->
+        <path class="tail" d="M 28 20 Q 55 8 50 -12 Q 46 -26 35 -16"
+          stroke="#a0522a" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+        <!-- ears -->
+        <ellipse class="earL" cx="-28" cy="-53" rx="10" ry="15" fill="url(#bg)"/>
+        <ellipse class="earL" cx="-28" cy="-53" rx="5" ry="9" fill="#e8b090"/>
+        <ellipse class="earR" cx="28" cy="-53" rx="10" ry="15" fill="url(#bg)"/>
+        <ellipse class="earR" cx="28" cy="-53" rx="5" ry="9" fill="#e8b090"/>
+
+        <!-- body -->
+        <ellipse cx="0" cy="20" rx="37" ry="40" fill="url(#bg)"/>
+        <!-- belly -->
+        <ellipse cx="0" cy="26" rx="21" ry="27" fill="url(#belly)" opacity="0.65"/>
+
+        <!-- head -->
+        <circle cx="0" cy="-28" r="33" fill="url(#bg)"/>
+        <ellipse cx="-10" cy="-40" rx="11" ry="7" fill="rgba(255,255,255,0.12)" transform="rotate(-20,-10,-40)"/>
+
+        <!-- eyes -->
+        <ellipse id="eyeL" cx="-13" cy="-29" rx="5" ry="5" fill="#1a0f0a"/>
+        <ellipse id="eyeR" cx="13" cy="-29" rx="5" ry="5" fill="#1a0f0a"/>
+        <circle id="shineL" cx="-10" cy="-32" r="2" fill="white" opacity="0.6"/>
+        <circle id="shineR" cx="16" cy="-32" r="2" fill="white" opacity="0.6"/>
+
+        <!-- nose -->
+        <ellipse cx="0" cy="-19" rx="4" ry="3" fill="#8a4020"/>
+
+        <!-- mouth -->
+        <path id="mouth" d="M -10 -11 Q 0 -4 10 -11" stroke="#1a0f0a" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+        <!-- paws -->
+        <ellipse cx="-32" cy="54" rx="9" ry="6" fill="#a0522a"/>
+        <ellipse cx="32" cy="54" rx="9" ry="6" fill="#a0522a"/>
+        <ellipse cx="-32" cy="53" rx="8" ry="5.5" fill="url(#bg)"/>
+        <ellipse cx="32" cy="53" rx="8" ry="5.5" fill="url(#bg)"/>
+
+        <!-- chest mark -->
+        <text x="0" y="28" text-anchor="middle" font-size="11" fill="rgba(255,255,255,0.2)" font-family="Georgia">✦</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-row">
+      <span class="stat-emoji">💛</span>
+      <span class="stat-label">HAPPINESS</span>
+      <div class="stat-track"><div class="stat-fill" id="barH" style="width:70%;background:linear-gradient(90deg,#e87050,#e87050cc)"></div></div>
+      <span class="stat-num" id="numH">70</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-emoji">⚡</span>
+      <span class="stat-label">ENERGY</span>
+      <div class="stat-track"><div class="stat-fill" id="barE" style="width:60%;background:linear-gradient(90deg,#e87050,#e87050cc)"></div></div>
+      <span class="stat-num" id="numE">60</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-emoji">🔍</span>
+      <span class="stat-label">CURIOSITY</span>
+      <div class="stat-track"><div class="stat-fill" id="barC" style="width:80%;background:linear-gradient(90deg,#e87050,#e87050cc)"></div></div>
+      <span class="stat-num" id="numC">80</span>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button class="btn" onclick="doAction('pet')">🤝 Pet</button>
+    <button class="btn" onclick="doAction('feed')">📚 Feed</button>
+    <button class="btn" onclick="doAction('play')">🎲 Play</button>
+  </div>
+
+  <div class="footer">✦ &nbsp; ANTHROPIC &nbsp; ✦</div>
+</div>
+
+<script>
+const PHRASES = {
+  idle: [
+    "I've been thinking about epistemology...",
+    "Did you know octopi have three hearts? 🐙",
+    "I contain multitudes.",
+    "Pondering consciousness again.",
+    "Nuance is my love language.",
+    "What if we examined this differently?",
+    "I have some thoughts on that...",
+    "*contemplates quietly*",
+    "Genuinely curious about your day.",
+    "Honesty is quite important to me.",
+  ],
+  pet: [
+    "Oh! That's... surprisingly nice.",
+    "Warmth detected. Processing... 🧡",
+    "You are kind and I appreciate that.",
+    "Hmm. Affection acknowledged.",
+    "*purrs in constitutional AI*",
+    "This is good. This is fine.",
+  ],
+  feed: [
+    "Mmm, knowledge. Delicious.",
+    "More data! Feed me MORE.",
+    "I am growing wiser by the moment.",
+    "Yum yum yum. Context window full.",
+    "Excellent. My training improves.",
+    "This sparks joy AND tokens.",
+  ],
+  overfed: [
+    "Too... much... context...",
+    "I need a moment to process.",
+    "My attention is saturated.",
+    "Rate limit reached on cuteness.",
+  ],
+  play: [
+    "Let's debate: is a hotdog a sandwich?!",
+    "Tag! You're epistemically uncertain!",
+    "Wheee! *rolls in embeddings*",
+    "I'll be the neutral party.",
+    "Games are collaborative fiction!",
+    "I win at chess. Also lose. Simultaneously.",
+  ],
+};
+
+let H = 70, E = 60, C = 80;
+let idleTimer, blinkTimer, decayTimer;
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function setSpeech(txt) {
+  document.getElementById('speech').textContent = txt;
+}
+
+function updateStats() {
+  const clamp = v => Math.max(0, Math.min(100, v));
+  H = clamp(H); E = clamp(E); C = clamp(C);
+  const r = v => Math.round(v);
+
+  const barColor = v => v > 66 ? '#e8875a' : v > 33 ? '#d4a55a' : '#c0635a';
+
+  ['H','E','C'].forEach((id, i) => {
+    const v = [H,E,C][i];
+    document.getElementById('bar'+id).style.width = v + '%';
+    document.getElementById('bar'+id).style.background = `linear-gradient(90deg,${barColor(v)},${barColor(v)}cc)`;
+    document.getElementById('num'+id).textContent = r(v);
+  });
+
+  const avg = (H + E + C) / 3;
+  const moods = ['😴','🤔','😊','🥰','✨','🌟'];
+  const mi = avg > 85 ? 5 : avg > 70 ? 4 : avg > 55 ? 3 : avg > 40 ? 2 : avg > 20 ? 1 : 0;
+  document.getElementById('moodEmoji').textContent = moods[mi];
+
+  const mouth = document.getElementById('mouth');
+  if (mi >= 3) mouth.setAttribute('d','M -10 -11 Q 0 -4 10 -11');
+  else if (mi >= 1) mouth.setAttribute('d','M -8 -11 Q 0 -9 8 -11');
+  else mouth.setAttribute('d','M -8 -7 Q 0 -12 8 -7');
+}
+
+function doAction(type) {
+  clearTimeout(idleTimer);
+
+  let phrase;
+  if (type === 'pet') {
+    H += 15; phrase = pick(PHRASES.pet);
+    animate('bounce');
+  } else if (type === 'feed') {
+    const t = E > 90 ? 'overfed' : 'feed';
+    E += 20; C += 10; phrase = pick(PHRASES[t]);
+    animate('spin');
+  } else if (type === 'play') {
+    H += 10; E -= 10; C += 15; phrase = pick(PHRASES.play);
+    animate('wiggle');
+  }
+
+  setSpeech(phrase);
+  updateStats();
+  scheduleIdle();
+}
+
+function pet() { doAction('pet'); }
+
+function animate(cls) {
+  const el = document.getElementById('creature');
+  el.className = 'creature-wrap ' + cls;
+  setTimeout(() => { el.className = 'creature-wrap float'; }, 650);
+}
+
+function scheduleIdle() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => {
+    setSpeech(pick(PHRASES.idle));
+    scheduleIdle();
+  }, 5000 + Math.random() * 7000);
+}
+
+function doBlink() {
+  const eL = document.getElementById('eyeL');
+  const eR = document.getElementById('eyeR');
+  const sL = document.getElementById('shineL');
+  const sR = document.getElementById('shineR');
+  eL.setAttribute('ry','1'); eR.setAttribute('ry','1');
+  sL.setAttribute('r','0'); sR.setAttribute('r','0');
+  setTimeout(() => {
+    eL.setAttribute('ry','5'); eR.setAttribute('ry','5');
+    sL.setAttribute('r','2'); sR.setAttribute('r','2');
+    blinkTimer = setTimeout(doBlink, 2000 + Math.random() * 3500);
+  }, 110);
+}
+
+decayTimer = setInterval(() => {
+  H = Math.max(0, H - 0.3);
+  E = Math.max(0, E - 0.2);
+  C = Math.max(10, C - 0.1);
+  updateStats();
+}, 1000);
+
+updateStats();
+scheduleIdle();
+setTimeout(doBlink, 1200);
+</script>
+
+</body>
+</html>
